@@ -2,6 +2,8 @@ use super::twain_h::*;
 
 use std::ffi::CString;
 
+pub type TwainUConst = u32;
+
 pub const STR32_LEN: usize = 34;
 pub const STR32_EMPTY: TW_STR32 = [0; STR32_LEN];
 
