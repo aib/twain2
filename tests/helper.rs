@@ -38,9 +38,3 @@ pub fn get_app_identity(support_app2:bool) -> TW_IDENTITY {
 		ProductName: tw_str32("Integration Test"),
 	}
 }
-
-#[test]
-fn test_load_twain_lib() {
-	let _lib = load_twain_lib();
-	assert!(true);
-}
