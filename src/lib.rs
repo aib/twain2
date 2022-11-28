@@ -60,6 +60,8 @@ impl OpenedDSM {
 	pub fn new(dsm_entry_wrapper: DSMEntryWrapper, app_identity: TW_IDENTITY) -> Result<Arc<Self>, Response> {
 		let app_identity = RwLock::new(app_identity);
 
+		log::debug!("Opening TWAIN DSM...");
+
 		let res = dsm_entry_wrapper.do_dsm_entry(Some(&mut app_identity.write()), None, DG_CONTROL, DAT_PARENT, MSG_OPENDSM, ptr::null_mut());
 		if !res.is_success() {
 			return Err(res);
@@ -93,6 +95,10 @@ impl OpenedDSM {
 
 impl Drop for OpenedDSM {
 	fn drop(&mut self) {
-		self.do_dsm_entry(None, DG_CONTROL, DAT_PARENT, MSG_CLOSEDSM, ptr::null_mut());
+		log::debug!("Closing TWAIN DSM");
+		let res = self.do_dsm_entry(None, DG_CONTROL, DAT_PARENT, MSG_CLOSEDSM, ptr::null_mut());
+		if !res.is_success() {
+			log::warn!("CLOSEDSM failed: {}", res);
+		}
 	}
 }

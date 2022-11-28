@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+log = "0.4.17"
 parking_lot = "0.12.1"
 
 [build-dependencies]
