@@ -12,6 +12,7 @@ fn main() {
 	println!("cargo:rerun-if-changed={}", TWAIN_WRAPPER_H);
 	bindgen::Builder::default()
 		.header(TWAIN_WRAPPER_H)
+		.blocklist_item("_?P?IMAGE_TLS_DIRECTORY64") //FIXME: Workaround for win32
 		.parse_callbacks(Box::new(bindgen::CargoCallbacks))
 		.generate()
 		.expect("Unable to generate twain.h bindings")
