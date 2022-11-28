@@ -38,7 +38,7 @@ fn test_dsmentrywrapper_open_and_close_dsm() {
 }
 
 #[test]
-fn test_openeddsm_new() {
+fn test_openeddsm_new_and_get_data_sources() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
 	let lib = helper::load_twain_lib();
@@ -47,4 +47,8 @@ fn test_openeddsm_new() {
 	let identity = helper::get_app_identity(false);
 	let dsm = OpenedDSM::new(wrapper, identity);
 	assert!(dsm.is_ok());
+
+	let dsm = dsm.unwrap();
+	let data_sources = dsm.get_data_sources();
+	assert!(data_sources.is_ok());
 }

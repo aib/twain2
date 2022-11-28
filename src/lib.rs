@@ -66,6 +66,24 @@ impl OpenedDSM {
 		Ok(Arc::new(OpenedDSM { app_identity, dsm_entry_wrapper }))
 	}
 
+	pub fn get_data_sources(&self) -> Result<Vec<TW_IDENTITY>, Response> {
+		let mut data_sources = Vec::new();
+
+		let mut first = true;
+		loop {
+			let mut identity: TW_IDENTITY = Default::default();
+			let res = self.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, if first { MSG_GETFIRST } else { MSG_GETNEXT }, &mut identity as *mut TW_IDENTITY as _);
+			match res {
+				Response { return_code: ReturnCode::Success, .. } => data_sources.push(identity),
+				Response { return_code: ReturnCode::EndOfList, .. } => break,
+				res => return Err(res),
+			}
+			first = false;
+		}
+
+		Ok(data_sources)
+	}
+
 	pub fn do_dsm_entry(&self, dest: Option<&mut TW_IDENTITY>, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
 		self.dsm_entry_wrapper.do_dsm_entry(Some(&mut self.app_identity.write()), dest, dg, dat, msg, data)
 	}
