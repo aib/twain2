@@ -9,6 +9,27 @@ pub const STR32_EMPTY: TW_STR32 = [0; STR32_LEN];
 
 pub type DSMEntryProc = unsafe extern "C" fn(pTW_IDENTITY, pTW_IDENTITY, TW_UINT32, TW_UINT16, TW_UINT16, TW_MEMREF) -> TW_UINT16;
 
+impl Default for TW_IDENTITY {
+	fn default() -> Self {
+		Self {
+			Id: 0,
+			Version: TW_VERSION {
+				MajorNum: 0,
+				MinorNum: 0,
+				Language: 0,
+				Country: 0,
+				Info: STR32_EMPTY,
+			},
+			ProtocolMajor: 0,
+			ProtocolMinor: 0,
+			SupportedGroups: 0,
+			Manufacturer: STR32_EMPTY,
+			ProductFamily: STR32_EMPTY,
+			ProductName: STR32_EMPTY,
+		}
+	}
+}
+
 pub fn tw_str32<S: AsRef<str>>(string: S) -> TW_STR32 {
 	let mut twstr = STR32_EMPTY;
 
