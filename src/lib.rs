@@ -8,9 +8,16 @@ use twain_h_ext::*;
 
 use std::mem::MaybeUninit;
 use std::ptr;
+use std::sync::Arc;
+use parking_lot::RwLock;
 
 pub struct DSMEntryWrapper {
 	entry_proc: DSMEntryProc,
+}
+
+pub struct OpenedDSM {
+	pub app_identity: RwLock<TW_IDENTITY>,
+	dsm_entry_wrapper: DSMEntryWrapper,
 }
 
 impl DSMEntryWrapper {
@@ -44,5 +51,28 @@ impl DSMEntryWrapper {
 		};
 
 		Response { return_code, condition_code }
+	}
+}
+
+impl OpenedDSM {
+	pub fn new(dsm_entry_wrapper: DSMEntryWrapper, app_identity: TW_IDENTITY) -> Result<Arc<Self>, Response> {
+		let app_identity = RwLock::new(app_identity);
+
+		let res = dsm_entry_wrapper.do_dsm_entry(Some(&mut app_identity.write()), None, DG_CONTROL, DAT_PARENT, MSG_OPENDSM, ptr::null_mut());
+		if !res.is_success() {
+			return Err(res);
+		}
+
+		Ok(Arc::new(OpenedDSM { app_identity, dsm_entry_wrapper }))
+	}
+
+	pub fn do_dsm_entry(&self, dest: Option<&mut TW_IDENTITY>, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
+		self.dsm_entry_wrapper.do_dsm_entry(Some(&mut self.app_identity.write()), dest, dg, dat, msg, data)
+	}
+}
+
+impl Drop for OpenedDSM {
+	fn drop(&mut self) {
+		self.do_dsm_entry(None, DG_CONTROL, DAT_PARENT, MSG_CLOSEDSM, ptr::null_mut());
 	}
 }

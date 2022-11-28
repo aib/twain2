@@ -36,3 +36,15 @@ fn test_dsmentrywrapper_open_and_close_dsm() {
 	let res = wrapper.do_dsm_entry(Some(&mut identity), None, DG_CONTROL, DAT_PARENT, MSG_CLOSEDSM, ptr::null_mut());
 	assert_eq!(response::ReturnCode::Success, res.return_code);
 }
+
+#[test]
+fn test_openeddsm_new() {
+	let _twain_mutex = TWAIN_MUTEX.lock();
+
+	let lib = helper::load_twain_lib();
+	let wrapper = DSMEntryWrapper::new(lib.dsm_entry);
+
+	let identity = helper::get_app_identity(false);
+	let dsm = OpenedDSM::new(wrapper, identity);
+	assert!(dsm.is_ok());
+}
