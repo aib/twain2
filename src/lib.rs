@@ -1,7 +1,9 @@
+pub mod entrypoint;
 pub mod response;
 pub mod twain_h;
 pub mod twain_h_ext;
 
+use entrypoint::*;
 use response::*;
 use twain_h::*;
 use twain_h_ext::*;
