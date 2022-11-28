@@ -23,6 +23,11 @@ pub struct OpenedDSM {
 	dsm_entry_wrapper: DSMEntryWrapper,
 }
 
+pub struct OpenedDS {
+	pub ds_identity: RwLock<TW_IDENTITY>,
+	pub dsm: Arc<OpenedDSM>,
+}
+
 impl DSMEntryWrapper {
 	pub fn new(dsm_entry: DSMENTRYPROC) -> Self {
 		Self { entry_proc: dsm_entry }
@@ -106,6 +111,10 @@ impl OpenedDSM {
 		Ok(data_sources)
 	}
 
+	pub fn open_data_source(self: &Arc<Self>, ds_identity: TW_IDENTITY) -> Result<Arc<OpenedDS>, Response> {
+		OpenedDS::new(self.clone(), ds_identity)
+	}
+
 	pub fn do_dsm_entry(&self, dest: Option<&mut TW_IDENTITY>, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
 		self.dsm_entry_wrapper.do_dsm_entry(Some(&mut self.app_identity.write()), dest, dg, dat, msg, data)
 	}
@@ -117,6 +126,36 @@ impl Drop for OpenedDSM {
 		let res = self.do_dsm_entry(None, DG_CONTROL, DAT_PARENT, MSG_CLOSEDSM, ptr::null_mut());
 		if !res.is_success() {
 			log::warn!("CLOSEDSM failed: {}", res);
+		}
+	}
+}
+
+impl OpenedDS {
+	fn new(dsm: Arc<OpenedDSM>, ds_identity: TW_IDENTITY) -> Result<Arc<Self>, Response> {
+		let ds_identity = RwLock::new(ds_identity);
+
+		log::debug!("Opening TWAIN DS \"{}\"", tw_str32_to_string(&ds_identity.read().ProductName));
+
+		let res = dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_OPENDS, &mut *ds_identity.write() as *mut TW_IDENTITY as _);
+		if !res.is_success() {
+			return Err(res);
+		}
+
+		Ok(Arc::new(Self { dsm, ds_identity }))
+	}
+
+	pub fn do_dsm_entry(&self, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
+		self.dsm.do_dsm_entry(Some(&mut self.ds_identity.write()), dg, dat, msg, data)
+	}
+}
+
+impl Drop for OpenedDS {
+	fn drop(&mut self) {
+		log::debug!("Closing TWAIN DS \"{}\"", tw_str32_to_string(&self.ds_identity.read().ProductName));
+
+		let res = self.dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_CLOSEDS, &mut *self.ds_identity.write() as *mut TW_IDENTITY as _);
+		if !res.is_success() {
+			log::warn!("CLOSEDS failed: {}", res);
 		}
 	}
 }
