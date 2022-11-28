@@ -1,3 +1,4 @@
+use twain::*;
 use twain::twain_h::*;
 mod helper;
 
@@ -13,4 +14,17 @@ fn test_open_and_close_dsm() {
 
 	let ret = unsafe { (lib.dsm_entry)(&mut identity, ptr::null_mut(), DG_CONTROL as TW_UINT32, DAT_PARENT as TW_UINT16, MSG_CLOSEDSM as TW_UINT16, ptr::null_mut()) };
 	assert_eq!(0, ret);
+}
+
+#[test]
+fn test_dsmentrywrapper_open_and_close_dsm() {
+	let lib = helper::load_twain_lib();
+	let wrapper = DSMEntryWrapper::new(lib.dsm_entry);
+
+	let mut identity = helper::get_app_identity(false);
+	let res = wrapper.do_dsm_entry(Some(&mut identity), None, DG_CONTROL, DAT_PARENT, MSG_OPENDSM, ptr::null_mut());
+	assert_eq!(response::ReturnCode::Success, res.return_code);
+
+	let res = wrapper.do_dsm_entry(Some(&mut identity), None, DG_CONTROL, DAT_PARENT, MSG_CLOSEDSM, ptr::null_mut());
+	assert_eq!(response::ReturnCode::Success, res.return_code);
 }
