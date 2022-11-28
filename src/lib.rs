@@ -83,7 +83,7 @@ impl OpenedDSM {
 			}
 		} else {
 			None
-		};
+		}.or_else(|| EntryPoints::os_default());
 
 		Ok(Arc::new(OpenedDSM { app_identity, entry_points, dsm_entry_wrapper }))
 	}

@@ -35,4 +35,28 @@ impl EntryPoints {
 
 		Some(EntryPoints { allocate, free, lock, unlock })
 	}
+
+	#[cfg(windows)]
+	pub fn os_default() -> Option<EntryPoints> {
+		let allocate = Box::new(move |size| unsafe {
+			winapi::um::winbase::GlobalAlloc(0, size as usize)
+		});
+
+		let free = Box::new(move |handle| unsafe {
+			winapi::um::winbase::GlobalFree(handle);
+		});
+
+		let lock = Box::new(move |handle| unsafe {
+			winapi::um::winbase::GlobalLock(handle)
+		});
+
+		let unlock = Box::new(move |handle| unsafe {
+			winapi::um::winbase::GlobalUnlock(handle);
+		});
+
+		Some(EntryPoints { allocate, free, lock, unlock })
+	}
+
+	#[cfg(unix)]
+	pub fn os_default() -> Option<EntryPoints> { None }
 }
