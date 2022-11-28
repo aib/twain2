@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-const TWAIN_WRAPPER_H: &str = "src/twain_wrapper.h";
+const TWAIN_WRAPPER_H: &str = "ext/twain_wrapper.h";
 
 fn main() {
 	let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
