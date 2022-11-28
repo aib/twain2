@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 log = "0.4.17"
 parking_lot = "0.12.1"
+winapi = { version = "0.3.9", features = ["std", "winbase", "winuser"] }
 
 [build-dependencies]
 bindgen = "0.63.0"
