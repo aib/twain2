@@ -173,6 +173,12 @@ impl fmt::Display for ConditionCode {
 	}
 }
 
+impl Response {
+	pub fn is_success(&self) -> bool {
+		self.return_code == ReturnCode::Success
+	}
+}
+
 impl fmt::Display for Response {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
 		write!(f, "RC={}, CC={}", self.return_code, self.condition_code)
