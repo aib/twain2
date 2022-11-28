@@ -12,7 +12,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 pub struct DSMEntryWrapper {
-	entry_proc: DSMEntryProc,
+	entry_proc: DSMENTRYPROC,
 }
 
 pub struct OpenedDSM {
@@ -21,7 +21,7 @@ pub struct OpenedDSM {
 }
 
 impl DSMEntryWrapper {
-	pub fn new(dsm_entry: DSMEntryProc) -> Self {
+	pub fn new(dsm_entry: DSMENTRYPROC) -> Self {
 		Self { entry_proc: dsm_entry }
 	}
 
@@ -36,11 +36,13 @@ impl DSMEntryWrapper {
 			Some(r) => r as *mut TW_IDENTITY,
 		};
 
-		let rc = unsafe { (self.entry_proc)(p_origin, p_dest, dg as TW_UINT32, dat as TW_UINT16, msg as TW_UINT16, data) };
+		let dsm_entry = self.entry_proc.unwrap(); //FIXME: Workaround for DSMENTRYPROC being Option<>
+
+		let rc = unsafe { dsm_entry(p_origin, p_dest, dg as TW_UINT32, dat as TW_UINT16, msg as TW_UINT16, data) };
 		let return_code = ReturnCode::from_rc(rc);
 
 		let mut tw_status: MaybeUninit<TW_STATUS> = MaybeUninit::uninit();
-		let src = unsafe { (self.entry_proc)(p_origin, p_dest, DG_CONTROL as TW_UINT32, DAT_STATUS as TW_UINT16, MSG_GET as TW_UINT16, tw_status.as_mut_ptr() as _) };
+		let src = unsafe { dsm_entry(p_origin, p_dest, DG_CONTROL as TW_UINT32, DAT_STATUS as TW_UINT16, MSG_GET as TW_UINT16, tw_status.as_mut_ptr() as _) };
 		let status_return_code = ReturnCode::from_rc(src);
 
 		let condition_code = if status_return_code == ReturnCode::Success {

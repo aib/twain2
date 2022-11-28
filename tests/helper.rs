@@ -8,13 +8,13 @@ const DSM_FILE: &str = "ext/TWAINDSM.dll";
 
 pub struct TwainLib {
 	_lib: libloading::Library,
-	pub dsm_entry: DSMEntryProc,
+	pub dsm_entry: DSMENTRYPROC,
 }
 
 pub fn load_twain_lib() -> TwainLib {
 	let lib = unsafe { libloading::Library::new(DSM_FILE).unwrap() };
 
-	let dsm_entry = *(unsafe { lib.get(b"DSM_Entry\0") }.unwrap());
+	let dsm_entry = Some(*unsafe { lib.get(b"DSM_Entry\0") }.unwrap());
 
 	TwainLib {
 		_lib: lib,

@@ -7,8 +7,6 @@ pub type TwainUConst = u32;
 pub const STR32_LEN: usize = 34;
 pub const STR32_EMPTY: TW_STR32 = [0; STR32_LEN];
 
-pub type DSMEntryProc = unsafe extern "C" fn(pTW_IDENTITY, pTW_IDENTITY, TW_UINT32, TW_UINT16, TW_UINT16, TW_MEMREF) -> TW_UINT16;
-
 impl Default for TW_IDENTITY {
 	fn default() -> Self {
 		Self {
@@ -62,12 +60,6 @@ pub fn tw_str32_to_string(twstr: &TW_STR32) -> String {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use assert_type_eq::assert_type_eq;
-
-	#[test]
-	fn dsmentryproc_matches_header() {
-		assert_type_eq!(DSMENTRYPROC, Option<DSMEntryProc>);
-	}
 
 	#[test]
 	fn str32_empty_is_empty() {
