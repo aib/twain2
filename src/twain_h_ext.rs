@@ -7,6 +7,19 @@ pub type TwainUConst = u32;
 pub const STR32_LEN: usize = 34;
 pub const STR32_EMPTY: TW_STR32 = [0; STR32_LEN];
 
+impl Default for TW_ENTRYPOINT {
+	fn default() -> Self {
+		Self {
+			Size: std::mem::size_of::<Self>() as TW_UINT32,
+			DSM_Entry: None,
+			DSM_MemAllocate: None,
+			DSM_MemFree: None,
+			DSM_MemLock: None,
+			DSM_MemUnlock: None,
+		}
+	}
+}
+
 impl Default for TW_IDENTITY {
 	fn default() -> Self {
 		Self {
