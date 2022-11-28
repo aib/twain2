@@ -1,7 +1,10 @@
 use std::env;
 use std::path::PathBuf;
 
-const TWAIN_WRAPPER_H: &str = "ext/twain_wrapper.h";
+#[cfg(unix)]
+const TWAIN_WRAPPER_H: &str = "ext/twain_wrapper_unix.h";
+#[cfg(windows)]
+const TWAIN_WRAPPER_H: &str = "ext/twain_wrapper_windows.h";
 
 fn main() {
 	let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
