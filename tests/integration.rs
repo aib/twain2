@@ -4,8 +4,14 @@ mod helper;
 
 use std::ptr;
 
+use parking_lot::Mutex;
+
+static TWAIN_MUTEX: Mutex<()> = Mutex::new(());
+
 #[test]
 fn test_open_and_close_dsm() {
+	let _twain_mutex = TWAIN_MUTEX.lock();
+
 	let lib = helper::load_twain_lib();
 
 	let mut identity = helper::get_app_identity(false);
@@ -18,6 +24,8 @@ fn test_open_and_close_dsm() {
 
 #[test]
 fn test_dsmentrywrapper_open_and_close_dsm() {
+	let _twain_mutex = TWAIN_MUTEX.lock();
+
 	let lib = helper::load_twain_lib();
 	let wrapper = DSMEntryWrapper::new(lib.dsm_entry);
 
