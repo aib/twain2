@@ -3,6 +3,8 @@ use twain::twain_h_ext::*;
 
 #[cfg(unix)]
 const DSM_FILE: &str = "ext/libtwaindsm.so";
+#[cfg(windows)]
+const DSM_FILE: &str = "ext/TWAINDSM.dll";
 
 pub struct TwainLib {
 	_lib: libloading::Library,
