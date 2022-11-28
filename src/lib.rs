@@ -19,6 +19,7 @@ pub struct DSMEntryWrapper {
 
 pub struct OpenedDSM {
 	pub app_identity: RwLock<TW_IDENTITY>,
+	pub entry_points: Option<EntryPoints>,
 	dsm_entry_wrapper: DSMEntryWrapper,
 }
 
@@ -69,7 +70,22 @@ impl OpenedDSM {
 			return Err(res);
 		}
 
-		Ok(Arc::new(OpenedDSM { app_identity, dsm_entry_wrapper }))
+		let use_twain2 = app_identity.read().SupportedGroups & DF_APP2 != 0 && app_identity.read().SupportedGroups & DF_DSM2 != 0;
+
+		let entry_points = if use_twain2 {
+			let mut ep: TW_ENTRYPOINT = Default::default();
+			let res = dsm_entry_wrapper.do_dsm_entry(Some(&mut app_identity.write()), None, DG_CONTROL, DAT_ENTRYPOINT, MSG_GET, &mut ep as *mut TW_ENTRYPOINT as _);
+			if res.is_success() {
+				EntryPoints::from_tw_entrypoint(ep)
+			} else {
+				log::warn!("Unable to obtain TWAIN 2 entry points: {}", res);
+				None
+			}
+		} else {
+			None
+		};
+
+		Ok(Arc::new(OpenedDSM { app_identity, entry_points, dsm_entry_wrapper }))
 	}
 
 	pub fn get_data_sources(&self) -> Result<Vec<TW_IDENTITY>, Response> {
