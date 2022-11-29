@@ -77,3 +77,18 @@ fn test_open_software_scanner_ds() {
 		assert!(true);
 	}
 }
+
+#[test]
+fn test_enable_and_disable_software_scanner_ds() {
+	let _twain_mutex = TWAIN_MUTEX.lock();
+
+	let lib = helper::load_twain_lib();
+	if let Some((_dsm, ds)) = get_software_scanner(&lib) {
+		let ui = TW_USERINTERFACE {
+			ShowUI: 0,
+			ModalUI: 0,
+			hParent: ptr::null_mut(),
+		};
+		let _eds = ds.enable(ui);
+	}
+}
