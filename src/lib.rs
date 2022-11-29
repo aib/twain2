@@ -141,11 +141,31 @@ impl OpenedDS {
 			return Err(res);
 		}
 
-		Ok(Arc::new(Self { dsm, ds_identity }))
+		let opened_ds = Arc::new(Self { dsm, ds_identity });
+
+		let mut callback = TW_CALLBACK2 {
+			CallBackProc: Self::callback as _,
+			RefCon: &opened_ds as *const _ as _,
+			Message: 0, //NOTE: This field seems to be undocumented/unused
+		};
+		let res = opened_ds.do_dsm_entry(DG_CONTROL, DAT_CALLBACK2, MSG_REGISTER_CALLBACK, &mut callback as *mut TW_CALLBACK2 as _);
+		if !res.is_success() {
+			log::warn!("Unable to set callback for TWAIN DS \"{}\": {}", tw_str32_to_string(&opened_ds.ds_identity.read().ProductName), res);
+		}
+
+		Ok(opened_ds)
 	}
 
 	pub fn do_dsm_entry(&self, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
 		self.dsm.do_dsm_entry(Some(&mut self.ds_identity.write()), dg, dat, msg, data)
+	}
+
+	extern "C" fn callback(origin: pTW_IDENTITY, dest: pTW_IDENTITY, dg: TW_UINT32, dat: TW_UINT16, msg: TW_UINT16, data: TW_MEMREF) -> TW_UINT16 {
+		let origin_id = unsafe { *origin };
+		let dest_id = unsafe { *dest };
+		let _self = unsafe { &*(data as *const Arc<Self>) };
+		log::debug!("TWAIN callback {:08x}/{:04x}/{:04x} \"{}\" -> \"{}\"", dg, dat, msg, tw_str32_to_string(&origin_id.ProductName), tw_str32_to_string(&dest_id.ProductName));
+		0
 	}
 }
 
