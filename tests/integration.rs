@@ -55,10 +55,14 @@ fn test_openeddsm_new_and_get_data_sources() {
 	assert!(data_sources.is_ok());
 }
 
-fn open_software_scanner(dsm: Arc<OpenedDSM>) -> Option<Arc<OpenedDS>> {
+fn get_software_scanner(lib: &helper::TwainLib) -> Option<(Arc<OpenedDSM>, Arc<OpenedDS>)> {
+	let wrapper = DSMEntryWrapper::new(lib.dsm_entry);
+	let identity = helper::get_app_identity(true);
+	let dsm = OpenedDSM::new(wrapper, identity).unwrap();
 	for ds in dsm.get_data_sources().unwrap() {
 		if tw_str32_to_string(&ds.ProductName) == "TWAIN2 Software Scanner" {
-			return Some(dsm.open_data_source(ds).unwrap());
+			let ds = dsm.open_data_source(ds).unwrap();
+			return Some((dsm, ds));
 		}
 	}
 	None
@@ -69,11 +73,7 @@ fn test_open_software_scanner_ds() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
 	let lib = helper::load_twain_lib();
-	let wrapper = DSMEntryWrapper::new(lib.dsm_entry);
-	let identity = helper::get_app_identity(true);
-	let dsm = OpenedDSM::new(wrapper, identity).unwrap();
-
-	if let Some(_ds) = open_software_scanner(dsm) {
+	if let Some((_dsm, _ds)) = get_software_scanner(&lib) {
 		assert!(true);
 	}
 }
