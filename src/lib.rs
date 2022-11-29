@@ -28,6 +28,10 @@ pub struct OpenedDS {
 	pub dsm: Arc<OpenedDSM>,
 }
 
+fn id_to_label(id: &TW_IDENTITY) -> String {
+	tw_str32_to_string(&id.ProductName)
+}
+
 impl DSMEntryWrapper {
 	pub fn new(dsm_entry: DSMENTRYPROC) -> Self {
 		Self { entry_proc: dsm_entry }
@@ -134,7 +138,7 @@ impl OpenedDS {
 	fn new(dsm: Arc<OpenedDSM>, ds_identity: TW_IDENTITY) -> Result<Arc<Self>, Response> {
 		let ds_identity = RwLock::new(ds_identity);
 
-		log::debug!("Opening TWAIN DS \"{}\"", tw_str32_to_string(&ds_identity.read().ProductName));
+		log::debug!("Opening TWAIN DS \"{}\"", id_to_label(&ds_identity.read()));
 
 		let res = dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_OPENDS, &mut *ds_identity.write() as *mut TW_IDENTITY as _);
 		if !res.is_success() {
@@ -150,7 +154,7 @@ impl OpenedDS {
 		};
 		let res = opened_ds.do_dsm_entry(DG_CONTROL, DAT_CALLBACK2, MSG_REGISTER_CALLBACK, &mut callback as *mut TW_CALLBACK2 as _);
 		if !res.is_success() {
-			log::warn!("Unable to set callback for TWAIN DS \"{}\": {}", tw_str32_to_string(&opened_ds.ds_identity.read().ProductName), res);
+			log::warn!("Unable to set callback for TWAIN DS \"{}\": {}", id_to_label(&opened_ds.ds_identity.read()), res);
 		}
 
 		Ok(opened_ds)
@@ -164,14 +168,14 @@ impl OpenedDS {
 		let origin_id = unsafe { *origin };
 		let dest_id = unsafe { *dest };
 		let _self = unsafe { &*(data as *const Arc<Self>) };
-		log::debug!("TWAIN callback {:08x}/{:04x}/{:04x} \"{}\" -> \"{}\"", dg, dat, msg, tw_str32_to_string(&origin_id.ProductName), tw_str32_to_string(&dest_id.ProductName));
+		log::debug!("TWAIN callback {:08x}/{:04x}/{:04x} \"{}\" -> \"{}\"", dg, dat, msg, id_to_label(&origin_id), id_to_label(&dest_id));
 		0
 	}
 }
 
 impl Drop for OpenedDS {
 	fn drop(&mut self) {
-		log::debug!("Closing TWAIN DS \"{}\"", tw_str32_to_string(&self.ds_identity.read().ProductName));
+		log::debug!("Closing TWAIN DS \"{}\"", id_to_label(&self.ds_identity.read()));
 
 		let res = self.dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_CLOSEDS, &mut *self.ds_identity.write() as *mut TW_IDENTITY as _);
 		if !res.is_success() {
