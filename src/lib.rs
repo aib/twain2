@@ -212,6 +212,14 @@ impl Drop for EnabledDS {
 	fn drop(&mut self) {
 		log::debug!("Disabling TWAIN DS \"{}\"", id_to_label(&self.ds.ds_identity.read()));
 
+		let mut pending_transfers: MaybeUninit<TW_PENDINGXFERS> = MaybeUninit::uninit();
+		let res = self.ds.do_dsm_entry(DG_CONTROL, DAT_PENDINGXFERS, MSG_RESET, pending_transfers.as_mut_ptr() as _);
+		if res.is_success() {
+			unsafe { pending_transfers.assume_init() };
+		} else {
+			log::warn!("PENDINGXFERS/RESET failed: {}", res);
+		}
+
 		let res = self.ds.do_dsm_entry(DG_CONTROL, DAT_USERINTERFACE, MSG_DISABLEDS, &mut self.ui as *mut TW_USERINTERFACE as _);
 		if !res.is_success() {
 			log::warn!("DISABLEDS failed: {}", res);
