@@ -1,5 +1,5 @@
-use twain::twain_h::*;
-use twain::twain_h_ext::*;
+use twain2::twain_h::*;
+use twain2::twain_h_ext::*;
 
 #[cfg(unix)]
 const DSM_FILE: &str = "ext/libtwaindsm.so";

@@ -1,6 +1,6 @@
-use twain::*;
-use twain::twain_h::*;
-use twain::twain_h_ext::*;
+use twain2::*;
+use twain2::twain_h::*;
+use twain2::twain_h_ext::*;
 mod helper;
 
 use std::ptr;
