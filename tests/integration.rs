@@ -28,8 +28,7 @@ fn test_open_and_close_dsm() {
 fn test_dsmentrywrapper_open_and_close_dsm() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
-	let lib = helper::load_twain_lib();
-	let wrapper = DSMEntryWrapper::from_dsmentryproc(lib.dsm_entry).unwrap();
+	let wrapper = helper::get_dsm_entry_wrapper();
 
 	let mut identity = helper::get_app_identity(false);
 	let res = wrapper.do_dsm_entry(Some(&mut identity), None, DG_CONTROL, DAT_PARENT, MSG_OPENDSM, ptr::null_mut());

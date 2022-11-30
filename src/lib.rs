@@ -16,6 +16,7 @@ use parking_lot::RwLock;
 
 pub struct DSMEntryWrapper {
 	entry_proc: Box<dyn Fn(*mut TW_IDENTITY, *mut TW_IDENTITY, TW_UINT32, TW_UINT16, TW_UINT16, TW_MEMREF) -> TW_UINT16>,
+	_libloading_library: Option<libloading::Library>,
 }
 
 pub struct OpenedDSM {
@@ -44,7 +45,16 @@ impl DSMEntryWrapper {
 		let entry_proc = move |origin: *mut TW_IDENTITY, dest: *mut TW_IDENTITY, dg: TW_UINT32, dat: TW_UINT16, msg: TW_UINT16, data: TW_MEMREF| -> TW_UINT16 {
 			unsafe { dsm_entry(origin, dest, dg, dat, msg, data) }
 		};
-		Some(Self { entry_proc: Box::new(entry_proc) })
+		Some(Self { entry_proc: Box::new(entry_proc), _libloading_library: None })
+	}
+
+	pub fn from_libloading_library(library: libloading::Library) -> Option<Self> {
+		let dsm_entry_symbol = unsafe { library.get(b"DSM_Entry\0") }.ok()?;
+		let dsm_entry: DSMENTRYPROC = Some(*dsm_entry_symbol);
+		let entry_proc = move |origin: *mut TW_IDENTITY, dest: *mut TW_IDENTITY, dg: TW_UINT32, dat: TW_UINT16, msg: TW_UINT16, data: TW_MEMREF| -> TW_UINT16 {
+			unsafe { (dsm_entry.unwrap())(origin, dest, dg, dat, msg, data) }
+		};
+		Some(Self { entry_proc: Box::new(entry_proc), _libloading_library: Some(library) })
 	}
 
 	pub fn do_dsm_entry(&self, origin: Option<&mut TW_IDENTITY>, dest: Option<&mut TW_IDENTITY>, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {

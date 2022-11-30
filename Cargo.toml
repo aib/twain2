@@ -12,6 +12,7 @@ readme = "README.md"
 description = "Rust TWAIN library"
 
 [dependencies]
+libloading = "0.7.4"
 log = "0.4.17"
 parking_lot = "0.12.1"
 winapi = { version = "0.3.9", features = ["std", "winbase", "winuser"] }
@@ -20,4 +21,3 @@ winapi = { version = "0.3.9", features = ["std", "winbase", "winuser"] }
 bindgen = "0.63.0"
 
 [dev-dependencies]
-libloading = "0.7.4"

@@ -1,3 +1,4 @@
+use twain2::*;
 use twain2::twain_h::*;
 use twain2::twain_h_ext::*;
 
@@ -20,6 +21,11 @@ pub fn load_twain_lib() -> TwainLib {
 		_lib: lib,
 		dsm_entry,
 	}
+}
+
+pub fn get_dsm_entry_wrapper() -> DSMEntryWrapper {
+	let lib = unsafe { libloading::Library::new(DSM_FILE).unwrap() };
+	DSMEntryWrapper::from_libloading_library(lib).unwrap()
 }
 
 pub fn get_app_identity(support_app2:bool) -> TW_IDENTITY {
