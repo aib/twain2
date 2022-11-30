@@ -1,3 +1,4 @@
+pub mod data;
 pub mod entrypoint;
 pub mod response;
 pub mod twain_h;
