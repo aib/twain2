@@ -29,7 +29,7 @@ fn test_dsmentrywrapper_open_and_close_dsm() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
 	let lib = helper::load_twain_lib();
-	let wrapper = DSMEntryWrapper::new(lib.dsm_entry);
+	let wrapper = DSMEntryWrapper::from_dsmentryproc(lib.dsm_entry).unwrap();
 
 	let mut identity = helper::get_app_identity(false);
 	let res = wrapper.do_dsm_entry(Some(&mut identity), None, DG_CONTROL, DAT_PARENT, MSG_OPENDSM, ptr::null_mut());
@@ -44,7 +44,7 @@ fn test_openeddsm_new_and_get_data_sources() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
 	let lib = helper::load_twain_lib();
-	let wrapper = DSMEntryWrapper::new(lib.dsm_entry);
+	let wrapper = DSMEntryWrapper::from_dsmentryproc(lib.dsm_entry).unwrap();
 
 	let identity = helper::get_app_identity(false);
 	let dsm = OpenedDSM::new(wrapper, identity);
@@ -56,7 +56,7 @@ fn test_openeddsm_new_and_get_data_sources() {
 }
 
 fn get_software_scanner(lib: &helper::TwainLib) -> Option<(Arc<OpenedDSM>, Arc<OpenedDS>)> {
-	let wrapper = DSMEntryWrapper::new(lib.dsm_entry);
+	let wrapper = DSMEntryWrapper::from_dsmentryproc(lib.dsm_entry).unwrap();
 	let identity = helper::get_app_identity(true);
 	let dsm = OpenedDSM::new(wrapper, identity).unwrap();
 	for ds in dsm.get_data_sources().unwrap() {

@@ -15,7 +15,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 pub struct DSMEntryWrapper {
-	entry_proc: DSMENTRYPROC,
+	entry_proc: Box<dyn Fn(*mut TW_IDENTITY, *mut TW_IDENTITY, TW_UINT32, TW_UINT16, TW_UINT16, TW_MEMREF) -> TW_UINT16>,
 }
 
 pub struct OpenedDSM {
@@ -39,8 +39,12 @@ fn id_to_label(id: &TW_IDENTITY) -> String {
 }
 
 impl DSMEntryWrapper {
-	pub fn new(dsm_entry: DSMENTRYPROC) -> Self {
-		Self { entry_proc: dsm_entry }
+	pub fn from_dsmentryproc(dsm_entry: DSMENTRYPROC) -> Option<Self> {
+		let dsm_entry = dsm_entry?;
+		let entry_proc = move |origin: *mut TW_IDENTITY, dest: *mut TW_IDENTITY, dg: TW_UINT32, dat: TW_UINT16, msg: TW_UINT16, data: TW_MEMREF| -> TW_UINT16 {
+			unsafe { dsm_entry(origin, dest, dg, dat, msg, data) }
+		};
+		Some(Self { entry_proc: Box::new(entry_proc) })
 	}
 
 	pub fn do_dsm_entry(&self, origin: Option<&mut TW_IDENTITY>, dest: Option<&mut TW_IDENTITY>, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
@@ -54,13 +58,13 @@ impl DSMEntryWrapper {
 			Some(r) => r as *mut TW_IDENTITY,
 		};
 
-		let dsm_entry = self.entry_proc.unwrap(); //FIXME: Workaround for DSMENTRYPROC being Option<>
+		let dsm_entry = &self.entry_proc;
 
-		let rc = unsafe { dsm_entry(p_origin, p_dest, dg as TW_UINT32, dat as TW_UINT16, msg as TW_UINT16, data) };
+		let rc = dsm_entry(p_origin, p_dest, dg as TW_UINT32, dat as TW_UINT16, msg as TW_UINT16, data);
 		let return_code = ReturnCode::from_rc(rc);
 
 		let mut tw_status: MaybeUninit<TW_STATUS> = MaybeUninit::uninit();
-		let src = unsafe { dsm_entry(p_origin, p_dest, DG_CONTROL as TW_UINT32, DAT_STATUS as TW_UINT16, MSG_GET as TW_UINT16, tw_status.as_mut_ptr() as _) };
+		let src = dsm_entry(p_origin, p_dest, DG_CONTROL as TW_UINT32, DAT_STATUS as TW_UINT16, MSG_GET as TW_UINT16, tw_status.as_mut_ptr() as _);
 		let status_return_code = ReturnCode::from_rc(src);
 
 		let condition_code = if status_return_code == ReturnCode::Success {
