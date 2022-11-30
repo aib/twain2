@@ -7,24 +7,12 @@ const DSM_FILE: &str = "ext/libtwaindsm.so";
 #[cfg(windows)]
 const DSM_FILE: &str = "ext/TWAINDSM.dll";
 
-pub struct TwainLib {
-	_lib: libloading::Library,
-	pub dsm_entry: DSMENTRYPROC,
-}
-
-pub fn load_twain_lib() -> TwainLib {
-	let lib = unsafe { libloading::Library::new(DSM_FILE).unwrap() };
-
-	let dsm_entry = Some(*unsafe { lib.get(b"DSM_Entry\0") }.unwrap());
-
-	TwainLib {
-		_lib: lib,
-		dsm_entry,
-	}
+pub fn load_twain_library() -> libloading::Library {
+	unsafe { libloading::Library::new(DSM_FILE).unwrap() }
 }
 
 pub fn get_dsm_entry_wrapper() -> DSMEntryWrapper {
-	let lib = unsafe { libloading::Library::new(DSM_FILE).unwrap() };
+	let lib = load_twain_library();
 	DSMEntryWrapper::from_libloading_library(lib).unwrap()
 }
 

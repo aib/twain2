@@ -14,13 +14,14 @@ static TWAIN_MUTEX: Mutex<()> = Mutex::new(());
 fn test_open_and_close_dsm() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
-	let lib = helper::load_twain_lib();
+	let lib = helper::load_twain_library();
+	let dsm_entry: DSMENTRYPROC = Some(*unsafe { lib.get(b"DSM_Entry\0") }.unwrap());
 
 	let mut identity = helper::get_app_identity(false);
-	let ret = unsafe { (lib.dsm_entry.unwrap())(&mut identity, ptr::null_mut(), DG_CONTROL as TW_UINT32, DAT_PARENT as TW_UINT16, MSG_OPENDSM as TW_UINT16, ptr::null_mut()) };
+	let ret = unsafe { (dsm_entry.unwrap())(&mut identity, ptr::null_mut(), DG_CONTROL as TW_UINT32, DAT_PARENT as TW_UINT16, MSG_OPENDSM as TW_UINT16, ptr::null_mut()) };
 	assert_eq!(0, ret);
 
-	let ret = unsafe { (lib.dsm_entry.unwrap())(&mut identity, ptr::null_mut(), DG_CONTROL as TW_UINT32, DAT_PARENT as TW_UINT16, MSG_CLOSEDSM as TW_UINT16, ptr::null_mut()) };
+	let ret = unsafe { (dsm_entry.unwrap())(&mut identity, ptr::null_mut(), DG_CONTROL as TW_UINT32, DAT_PARENT as TW_UINT16, MSG_CLOSEDSM as TW_UINT16, ptr::null_mut()) };
 	assert_eq!(0, ret);
 }
 
@@ -42,8 +43,7 @@ fn test_dsmentrywrapper_open_and_close_dsm() {
 fn test_openeddsm_new_and_get_data_sources() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
-	let lib = helper::load_twain_lib();
-	let wrapper = DSMEntryWrapper::from_dsmentryproc(lib.dsm_entry).unwrap();
+	let wrapper = helper::get_dsm_entry_wrapper();
 
 	let identity = helper::get_app_identity(false);
 	let dsm = OpenedDSM::new(wrapper, identity);
@@ -54,8 +54,7 @@ fn test_openeddsm_new_and_get_data_sources() {
 	assert!(data_sources.is_ok());
 }
 
-fn get_software_scanner(lib: &helper::TwainLib) -> Option<(Arc<OpenedDSM>, Arc<OpenedDS>)> {
-	let wrapper = DSMEntryWrapper::from_dsmentryproc(lib.dsm_entry).unwrap();
+fn get_software_scanner(wrapper: DSMEntryWrapper) -> Option<(Arc<OpenedDSM>, Arc<OpenedDS>)> {
 	let identity = helper::get_app_identity(true);
 	let dsm = OpenedDSM::new(wrapper, identity).unwrap();
 	for ds in dsm.get_data_sources().unwrap() {
@@ -71,8 +70,7 @@ fn get_software_scanner(lib: &helper::TwainLib) -> Option<(Arc<OpenedDSM>, Arc<O
 fn test_open_software_scanner_ds() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
-	let lib = helper::load_twain_lib();
-	if let Some((_dsm, _ds)) = get_software_scanner(&lib) {
+	if let Some((_dsm, _ds)) = get_software_scanner(helper::get_dsm_entry_wrapper()) {
 		assert!(true);
 	}
 }
@@ -81,8 +79,7 @@ fn test_open_software_scanner_ds() {
 fn test_enable_and_disable_software_scanner_ds() {
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
-	let lib = helper::load_twain_lib();
-	if let Some((_dsm, ds)) = get_software_scanner(&lib) {
+	if let Some((_dsm, ds)) = get_software_scanner(helper::get_dsm_entry_wrapper()) {
 		let ui = TW_USERINTERFACE {
 			ShowUI: 0,
 			ModalUI: 0,
