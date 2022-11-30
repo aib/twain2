@@ -1,4 +1,5 @@
 *
 !.gitignore
+!twain.h
 !twain_wrapper_unix.h
 !twain_wrapper_windows.h
