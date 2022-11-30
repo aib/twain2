@@ -1,7 +1,15 @@
 [package]
 name = "twain"
-version = "0.1.0"
+version = "0.1.0-alpha.0"
 edition = "2021"
+authors = ["Orhan \"aib\" Kavrakoglu <aibok42@gmail.com>"]
+license = "MIT"
+keywords = ["twain", "scanner"]
+categories = ["api-bindings", "multimedia::images"]
+homepage = "https://github.com/aib/twain2"
+repository = "https://github.com/aib/twain2"
+readme = "README.md"
+description = "Rust TWAIN library"
 
 [dependencies]
 log = "0.4.17"
