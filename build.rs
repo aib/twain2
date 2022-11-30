@@ -1,17 +1,16 @@
 use std::env;
 use std::path::PathBuf;
 
-#[cfg(unix)]
-const TWAIN_WRAPPER_H: &str = "ext/twain_wrapper_unix.h";
-#[cfg(windows)]
-const TWAIN_WRAPPER_H: &str = "ext/twain_wrapper_windows.h";
-
 fn main() {
+	let target_windows = std::env::var("CARGO_CFG_TARGET_OS").map_or(false, |t| t.eq_ignore_ascii_case("windows"));
+
+	let twain_wrapper_h = if target_windows { "ext/twain_wrapper_windows.h" } else { "ext/twain_wrapper_unix.h" };
+
 	let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-	println!("cargo:rerun-if-changed={}", TWAIN_WRAPPER_H);
+	println!("cargo:rerun-if-changed={}", twain_wrapper_h);
 	bindgen::Builder::default()
-		.header(TWAIN_WRAPPER_H)
+		.header(twain_wrapper_h)
 		.blocklist_item("_?P?IMAGE_TLS_DIRECTORY64") //FIXME: Workaround for win32
 		.parse_callbacks(Box::new(bindgen::CargoCallbacks))
 		.generate()
