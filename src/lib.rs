@@ -232,6 +232,23 @@ impl OpenedDS {
 		Ok(())
 	}
 
+	pub fn reset_pending_transfers(&mut self) -> Result<(), DSError> {
+		if *self.state.read() != DSState::TransferReady {
+			return Err(DSError::InvalidState(*self.state.read()));
+		}
+
+		log::debug!("Resetting pending transfers for TWAIN DS \"{}\"", id_to_label(&self.ds_identity.read()));
+
+		let mut pending_transfers: MaybeUninit<TW_PENDINGXFERS> = MaybeUninit::uninit();
+		let res = self.do_dsm_entry(DG_CONTROL, DAT_PENDINGXFERS, MSG_RESET, pending_transfers.as_mut_ptr() as _);
+		if !res.is_success() {
+			return Err(DSError::BadResponse(res));
+		}
+
+		self.set_state(DSState::SourceEnabled);
+		Ok(())
+	}
+
 	pub fn do_dsm_entry(&self, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
 		self.dsm.do_dsm_entry(Some(&mut self.ds_identity.write()), dg, dat, msg, data)
 	}
@@ -239,8 +256,16 @@ impl OpenedDS {
 	extern "C" fn callback(origin: pTW_IDENTITY, dest: pTW_IDENTITY, dg: TW_UINT32, dat: TW_UINT16, msg: TW_UINT16, data: TW_MEMREF) -> TW_UINT16 {
 		let origin_id = unsafe { *origin };
 		let dest_id = unsafe { *dest };
-		let _self = unsafe { &*(data as *const Self) };
-		log::debug!("TWAIN callback {:08x}/{:04x}/{:04x} \"{}\" -> \"{}\"", dg, dat, msg, id_to_label(&origin_id), id_to_label(&dest_id));
+		let self_ = unsafe { &*(data as *const Self) };
+
+		let message_str = || format!("{:08x}/{:04x}/{:04x} \"{}\" -> \"{}\"", dg, dat, msg, id_to_label(&origin_id), id_to_label(&dest_id));
+		log::debug!("TWAIN callback {}", message_str());
+
+		match msg as TwainUConst {
+			MSG_XFERREADY => self_.set_state(DSState::TransferReady),
+			_ => log::warn!("Unknown or unsupported callback message {}", message_str()),
+		}
+
 		0
 	}
 
@@ -252,6 +277,10 @@ impl OpenedDS {
 
 impl Drop for OpenedDS {
 	fn drop(&mut self) {
+		if *self.state.read() == DSState::TransferReady {
+			self.reset_pending_transfers().unwrap_or_else(|err| log::warn!("Unable to reset pending transfers: {}", err));
+		}
+
 		if *self.state.read() == DSState::SourceEnabled {
 			self.disable().unwrap_or_else(|err| log::warn!("Unable to disable DS: {}", err));
 		}
