@@ -54,7 +54,7 @@ fn test_openeddsm_new_and_get_data_sources() {
 	assert!(data_sources.is_ok());
 }
 
-fn get_software_scanner(wrapper: DSMEntryWrapper) -> Option<(Arc<OpenedDSM>, Arc<OpenedDS>)> {
+fn get_software_scanner(wrapper: DSMEntryWrapper) -> Option<(Arc<OpenedDSM>, OpenedDS)> {
 	let identity = helper::get_app_identity(true);
 	let dsm = OpenedDSM::new(wrapper, identity).unwrap();
 	for ds in dsm.get_data_sources().unwrap() {

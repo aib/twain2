@@ -145,7 +145,7 @@ impl OpenedDSM {
 		Ok(data_sources)
 	}
 
-	pub fn open_data_source(self: &Arc<Self>, ds_identity: TW_IDENTITY) -> Result<Arc<OpenedDS>, Response> {
+	pub fn open_data_source(self: &Arc<Self>, ds_identity: TW_IDENTITY) -> Result<OpenedDS, Response> {
 		OpenedDS::new(self.clone(), ds_identity)
 	}
 
@@ -165,7 +165,7 @@ impl Drop for OpenedDSM {
 }
 
 impl OpenedDS {
-	fn new(dsm: Arc<OpenedDSM>, ds_identity: TW_IDENTITY) -> Result<Arc<Self>, Response> {
+	fn new(dsm: Arc<OpenedDSM>, ds_identity: TW_IDENTITY) -> Result<Self, Response> {
 		let ds_identity = RwLock::new(ds_identity);
 
 		log::debug!("Opening TWAIN DS \"{}\"", id_to_label(&ds_identity.read()));
@@ -175,7 +175,7 @@ impl OpenedDS {
 			return Err(res);
 		}
 
-		let opened_ds = Arc::new(Self { dsm, ds_identity });
+		let opened_ds = Self { dsm, ds_identity };
 
 		let mut callback = TW_CALLBACK2 {
 			CallBackProc: Self::callback as _,
@@ -197,7 +197,7 @@ impl OpenedDS {
 	extern "C" fn callback(origin: pTW_IDENTITY, dest: pTW_IDENTITY, dg: TW_UINT32, dat: TW_UINT16, msg: TW_UINT16, data: TW_MEMREF) -> TW_UINT16 {
 		let origin_id = unsafe { *origin };
 		let dest_id = unsafe { *dest };
-		let _self = unsafe { &*(data as *const Arc<Self>) };
+		let _self = unsafe { &*(data as *const Self) };
 		log::debug!("TWAIN callback {:08x}/{:04x}/{:04x} \"{}\" -> \"{}\"", dg, dat, msg, id_to_label(&origin_id), id_to_label(&dest_id));
 		0
 	}
