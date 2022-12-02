@@ -27,6 +27,7 @@ pub struct OpenedDSM {
 }
 
 pub struct OpenedDS {
+	pub name: String,
 	pub ds_identity: RwLock<TW_IDENTITY>,
 	pub dsm: Arc<OpenedDSM>,
 	pub ui: RwLock<Option<TW_USERINTERFACE>>,
@@ -169,15 +170,16 @@ impl Drop for OpenedDSM {
 impl OpenedDS {
 	fn new(dsm: Arc<OpenedDSM>, ds_identity: TW_IDENTITY) -> Result<Box<Self>, Response> {
 		let ds_identity = RwLock::new(ds_identity);
+		let name = id_to_label(&ds_identity.read());
 
-		log::debug!("Opening TWAIN DS \"{}\"", id_to_label(&ds_identity.read()));
+		log::debug!("Opening TWAIN DS \"{}\"", name);
 
 		let res = dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_OPENDS, &mut *ds_identity.write() as *mut TW_IDENTITY as _);
 		if !res.is_success() {
 			return Err(res);
 		}
 
-		let opened_ds = Box::new(Self { dsm, ds_identity, ui: RwLock::new(None), state: RwLock::new(DSState::SourceOpen) });
+		let opened_ds = Box::new(Self { name, dsm, ds_identity, ui: RwLock::new(None), state: RwLock::new(DSState::SourceOpen) });
 
 		let mut callback = TW_CALLBACK2 {
 			CallBackProc: Self::callback as _,
@@ -186,7 +188,7 @@ impl OpenedDS {
 		};
 		let res = opened_ds.do_dsm_entry(DG_CONTROL, DAT_CALLBACK2, MSG_REGISTER_CALLBACK, &mut callback as *mut TW_CALLBACK2 as _);
 		if !res.is_success() {
-			log::warn!("Unable to set callback for TWAIN DS \"{}\": {}", id_to_label(&opened_ds.ds_identity.read()), res);
+			log::warn!("Unable to set callback for TWAIN DS \"{}\": {}", opened_ds.name, res);
 		}
 
 		Ok(opened_ds)
@@ -199,7 +201,7 @@ impl OpenedDS {
 
 		let mut ui = ui;
 
-		log::debug!("Enabling TWAIN DS \"{}\"", id_to_label(&self.ds_identity.read()));
+		log::debug!("Enabling TWAIN DS \"{}\"", self.name);
 
 		let res = self.do_dsm_entry(DG_CONTROL, DAT_USERINTERFACE, MSG_ENABLEDS, &mut ui as *mut TW_USERINTERFACE as _);
 		if !res.is_success() {
@@ -216,7 +218,7 @@ impl OpenedDS {
 			return Err(DSError::InvalidState(*self.state.read()));
 		}
 
-		log::debug!("Disabling TWAIN DS \"{}\"", id_to_label(&self.ds_identity.read()));
+		log::debug!("Disabling TWAIN DS \"{}\"", self.name);
 
 		let mut ui = self.ui.read().ok_or_else(|| DSError::InvalidState(*self.state.read()))?;
 
@@ -243,7 +245,7 @@ impl OpenedDS {
 	}
 
 	fn set_state(&self, state: DSState) {
-		log::debug!("TWAIN state \"{}\" {} -> {}", id_to_label(&self.ds_identity.read()), self.state.read(), state);
+		log::debug!("TWAIN state \"{}\" {} -> {}", self.name, self.state.read(), state);
 		*self.state.write() = state;
 	}
 }
@@ -254,7 +256,7 @@ impl Drop for OpenedDS {
 			self.disable().unwrap_or_else(|err| log::warn!("Unable to disable DS: {}", err));
 		}
 
-		log::debug!("Closing TWAIN DS \"{}\"", id_to_label(&self.ds_identity.read()));
+		log::debug!("Closing TWAIN DS \"{}\"", self.name);
 
 		let res = self.dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_CLOSEDS, &mut *self.ds_identity.write() as *mut TW_IDENTITY as _);
 		if !res.is_success() {
