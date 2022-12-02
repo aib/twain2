@@ -147,7 +147,7 @@ impl OpenedDSM {
 		Ok(data_sources)
 	}
 
-	pub fn open_data_source(self: &Arc<Self>, ds_identity: TW_IDENTITY) -> Result<OpenedDS, Response> {
+	pub fn open_data_source(self: &Arc<Self>, ds_identity: TW_IDENTITY) -> Result<Box<OpenedDS>, Response> {
 		OpenedDS::new(self.clone(), ds_identity)
 	}
 
@@ -167,7 +167,7 @@ impl Drop for OpenedDSM {
 }
 
 impl OpenedDS {
-	fn new(dsm: Arc<OpenedDSM>, ds_identity: TW_IDENTITY) -> Result<Self, Response> {
+	fn new(dsm: Arc<OpenedDSM>, ds_identity: TW_IDENTITY) -> Result<Box<Self>, Response> {
 		let ds_identity = RwLock::new(ds_identity);
 
 		log::debug!("Opening TWAIN DS \"{}\"", id_to_label(&ds_identity.read()));
@@ -177,11 +177,11 @@ impl OpenedDS {
 			return Err(res);
 		}
 
-		let opened_ds = Self { dsm, ds_identity, ui: RwLock::new(None), state: RwLock::new(DSState::SourceOpen) };
+		let opened_ds = Box::new(Self { dsm, ds_identity, ui: RwLock::new(None), state: RwLock::new(DSState::SourceOpen) });
 
 		let mut callback = TW_CALLBACK2 {
 			CallBackProc: Self::callback as _,
-			RefCon: &opened_ds as *const _ as _,
+			RefCon: &*opened_ds as *const _ as _,
 			Message: 0, //NOTE: This field seems to be undocumented/unused
 		};
 		let res = opened_ds.do_dsm_entry(DG_CONTROL, DAT_CALLBACK2, MSG_REGISTER_CALLBACK, &mut callback as *mut TW_CALLBACK2 as _);
