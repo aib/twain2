@@ -9,6 +9,7 @@ use response::*;
 use twain_h::*;
 use twain_h_ext::*;
 
+use std::fmt;
 use std::mem::MaybeUninit;
 use std::ptr;
 use std::sync::Arc;
@@ -28,6 +29,20 @@ pub struct OpenedDSM {
 pub struct OpenedDS {
 	pub ds_identity: RwLock<TW_IDENTITY>,
 	pub dsm: Arc<OpenedDSM>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum DSState {
+	SourceOpen,
+	SourceEnabled,
+	TransferReady,
+	Transferring,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum DSError {
+	InvalidState(DSState),
+	BadResponse(Response),
 }
 
 fn id_to_label(id: &TW_IDENTITY) -> String {
@@ -195,6 +210,26 @@ impl Drop for OpenedDS {
 		let res = self.dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_CLOSEDS, &mut *self.ds_identity.write() as *mut TW_IDENTITY as _);
 		if !res.is_success() {
 			log::warn!("CLOSEDS failed: {}", res);
+		}
+	}
+}
+
+impl fmt::Display for DSState {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+		match self {
+			Self::SourceOpen    => write!(f, "SourceOpen"),
+			Self::SourceEnabled => write!(f, "SourceEnabled"),
+			Self::TransferReady => write!(f, "TransferReady"),
+			Self::Transferring  => write!(f, "Transferring"),
+		}
+	}
+}
+
+impl fmt::Display for DSError {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+		match self {
+			Self::InvalidState(state) => write!(f, "InvalidState({})", state),
+			Self::BadResponse(res)    => write!(f, "BadResponse({})", res),
 		}
 	}
 }
