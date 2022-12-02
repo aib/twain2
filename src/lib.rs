@@ -30,11 +30,6 @@ pub struct OpenedDS {
 	pub dsm: Arc<OpenedDSM>,
 }
 
-pub struct EnabledDS {
-	pub ds: Arc<OpenedDS>,
-	pub ui: TW_USERINTERFACE,
-}
-
 fn id_to_label(id: &TW_IDENTITY) -> String {
 	tw_str32_to_string(&id.ProductName)
 }
@@ -180,10 +175,6 @@ impl OpenedDS {
 		Ok(opened_ds)
 	}
 
-	pub fn enable(self: &Arc<Self>, ui: TW_USERINTERFACE) -> Result<Arc<EnabledDS>, Response> {
-		EnabledDS::new(self.clone(), ui)
-	}
-
 	pub fn do_dsm_entry(&self, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
 		self.dsm.do_dsm_entry(Some(&mut self.ds_identity.write()), dg, dat, msg, data)
 	}
@@ -204,40 +195,6 @@ impl Drop for OpenedDS {
 		let res = self.dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_CLOSEDS, &mut *self.ds_identity.write() as *mut TW_IDENTITY as _);
 		if !res.is_success() {
 			log::warn!("CLOSEDS failed: {}", res);
-		}
-	}
-}
-
-impl EnabledDS {
-	fn new(ds: Arc<OpenedDS>, ui: TW_USERINTERFACE) -> Result<Arc<Self>, Response> {
-		let mut ui = ui;
-
-		log::debug!("Enabling TWAIN DS \"{}\"", id_to_label(&ds.ds_identity.read()));
-
-		let res = ds.do_dsm_entry(DG_CONTROL, DAT_USERINTERFACE, MSG_ENABLEDS, &mut ui as *mut TW_USERINTERFACE as _);
-		if !res.is_success() {
-			return Err(res);
-		}
-
-		Ok(Arc::new(EnabledDS { ds, ui }))
-	}
-}
-
-impl Drop for EnabledDS {
-	fn drop(&mut self) {
-		log::debug!("Disabling TWAIN DS \"{}\"", id_to_label(&self.ds.ds_identity.read()));
-
-		let mut pending_transfers: MaybeUninit<TW_PENDINGXFERS> = MaybeUninit::uninit();
-		let res = self.ds.do_dsm_entry(DG_CONTROL, DAT_PENDINGXFERS, MSG_RESET, pending_transfers.as_mut_ptr() as _);
-		if res.is_success() {
-			unsafe { pending_transfers.assume_init() };
-		} else {
-			log::warn!("PENDINGXFERS/RESET failed: {}", res);
-		}
-
-		let res = self.ds.do_dsm_entry(DG_CONTROL, DAT_USERINTERFACE, MSG_DISABLEDS, &mut self.ui as *mut TW_USERINTERFACE as _);
-		if !res.is_success() {
-			log::warn!("DISABLEDS failed: {}", res);
 		}
 	}
 }
