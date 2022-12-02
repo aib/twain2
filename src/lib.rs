@@ -252,6 +252,49 @@ impl OpenedDS {
 		Ok(())
 	}
 
+	pub fn acquire_native_image<T, F: FnOnce(TW_HANDLE) -> T>(&self, f: F) -> Result<Option<T>, DSError> {
+		if *self.state.read() != DSState::TransferReady {
+			return Err(DSError::InvalidState(*self.state.read()));
+		}
+
+		let mut handle: MaybeUninit<TW_HANDLE> = MaybeUninit::uninit();
+		let res = self.do_dsm_entry(DG_IMAGE, DAT_IMAGENATIVEXFER, MSG_GET, handle.as_mut_ptr() as _);
+		let handle = match res {
+			Response { return_code: ReturnCode::XferDone, .. } => {
+				log::debug!("Acquired native image on \"{}\"", self.name);
+				let handle = unsafe { handle.assume_init() };
+				Some(handle)
+			},
+			Response { return_code: ReturnCode::Cancel, .. } => {
+				log::debug!("Acquire native image cancelled on \"{}\"", self.name);
+				None
+			},
+			res => return Err(DSError::BadResponse(res)),
+		};
+
+		self.set_state(DSState::Transferring);
+
+		let f_result = handle.map(f);
+
+		let mut px: MaybeUninit<TW_PENDINGXFERS> = MaybeUninit::uninit();
+		let res = self.do_dsm_entry(DG_CONTROL, DAT_PENDINGXFERS, MSG_ENDXFER, px.as_mut_ptr() as _);
+		if res.is_success() {
+			let px = unsafe { px.assume_init() };
+
+			log::debug!("Ended transfer on \"{}\", {} image(s) remaining", self.name, px.Count);
+
+			if px.Count == 0 {
+				self.set_state(DSState::SourceEnabled);
+			} else {
+				self.set_state(DSState::TransferReady);
+			}
+		} else {
+			log::warn!("Unable to end transfer: {}", res);
+		}
+
+		Ok(f_result)
+	}
+
 	pub fn do_dsm_entry(&self, dg: TwainUConst, dat: TwainUConst, msg: TwainUConst, data: TW_MEMREF) -> Response {
 		self.dsm.do_dsm_entry(Some(&mut self.ds_identity.write()), dg, dat, msg, data)
 	}

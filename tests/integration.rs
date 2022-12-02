@@ -93,3 +93,37 @@ fn test_enable_software_scanner_ds() {
 		ds.enable(ui).unwrap();
 	}
 }
+
+#[test]
+fn test_acquire_native_from_software_scanner_ds() {
+	helper::init();
+	let _twain_mutex = TWAIN_MUTEX.lock();
+
+	if let Some((_dsm, ds)) = get_software_scanner(helper::get_dsm_entry_wrapper()) {
+		let ui = TW_USERINTERFACE {
+			ShowUI: 0,
+			ModalUI: 0,
+			hParent: ptr::null_mut(),
+		};
+		ds.enable(ui).unwrap();
+
+		assert_eq!(DSState::TransferReady, *ds.state.read());
+
+		let mut calls = 0;
+		let res = ds.acquire_native_image(|h| {
+			assert_ne!(0 as TW_HANDLE, h);
+			calls += 1;
+			42
+		});
+		assert_eq!(Ok(Some(42)), res);
+
+		let res = ds.acquire_native_image(|h| {
+			assert_ne!(0 as TW_HANDLE, h);
+			calls += 1;
+			42
+		});
+		assert_eq!(Ok(Some(42)), res);
+
+		assert_eq!(2, calls);
+	}
+}
