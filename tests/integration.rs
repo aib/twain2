@@ -12,6 +12,7 @@ static TWAIN_MUTEX: Mutex<()> = Mutex::new(());
 
 #[test]
 fn test_open_and_close_dsm() {
+	helper::init();
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
 	let lib = helper::load_twain_library();
@@ -27,6 +28,7 @@ fn test_open_and_close_dsm() {
 
 #[test]
 fn test_dsmentrywrapper_open_and_close_dsm() {
+	helper::init();
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
 	let wrapper = helper::get_dsm_entry_wrapper();
@@ -41,6 +43,7 @@ fn test_dsmentrywrapper_open_and_close_dsm() {
 
 #[test]
 fn test_openeddsm_new_and_get_data_sources() {
+	helper::init();
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
 	let wrapper = helper::get_dsm_entry_wrapper();
@@ -68,6 +71,7 @@ fn get_software_scanner(wrapper: DSMEntryWrapper) -> Option<(Arc<OpenedDSM>, Ope
 
 #[test]
 fn test_open_software_scanner_ds() {
+	helper::init();
 	let _twain_mutex = TWAIN_MUTEX.lock();
 
 	if let Some((_dsm, _ds)) = get_software_scanner(helper::get_dsm_entry_wrapper()) {

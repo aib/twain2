@@ -7,6 +7,16 @@ const DSM_FILE: &str = "ext/libtwaindsm.so";
 #[cfg(windows)]
 const DSM_FILE: &str = "ext/TWAINDSM.dll";
 
+pub fn init() {
+	env_logger::Builder::new()
+		.filter_level(log::LevelFilter::Warn)
+		.format_target(false)
+		.format_timestamp_millis()
+		.write_style(env_logger::WriteStyle::Always)
+		.try_init()
+		.ok();
+}
+
 pub fn load_twain_library() -> libloading::Library {
 	unsafe { libloading::Library::new(DSM_FILE).unwrap() }
 }
