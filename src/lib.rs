@@ -203,13 +203,16 @@ impl OpenedDS {
 
 		log::debug!("Enabling TWAIN DS \"{}\"", self.name);
 
+		// Set state beforehand in case this call causes a callback to change the state further, we can roll back on error
+		self.set_state(DSState::SourceEnabled);
+
 		let res = self.do_dsm_entry(DG_CONTROL, DAT_USERINTERFACE, MSG_ENABLEDS, &mut ui as *mut TW_USERINTERFACE as _);
 		if !res.is_success() {
+			self.set_state(DSState::SourceOpen);
 			return Err(DSError::BadResponse(res));
 		}
 
 		*self.ui.write() = Some(ui);
-		self.set_state(DSState::SourceEnabled);
 		Ok(())
 	}
 
