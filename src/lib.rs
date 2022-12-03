@@ -31,7 +31,7 @@ pub struct OpenedDS {
 	pub ds_identity: RwLock<TW_IDENTITY>,
 	pub dsm: Arc<OpenedDSM>,
 	pub ui: RwLock<Option<TW_USERINTERFACE>>,
-	pub state: RwLock<DSState>,
+	state: RwLock<DSState>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -168,6 +168,10 @@ impl Drop for OpenedDSM {
 }
 
 impl OpenedDS {
+	pub fn get_state(&self) -> DSState {
+		*self.state.read()
+	}
+
 	fn new(dsm: Arc<OpenedDSM>, ds_identity: TW_IDENTITY) -> Result<Box<Self>, Response> {
 		let ds_identity = RwLock::new(ds_identity);
 		let name = id_to_label(&ds_identity.read());
@@ -195,8 +199,8 @@ impl OpenedDS {
 	}
 
 	pub fn enable(&self, ui: TW_USERINTERFACE) -> Result<(), DSError> {
-		if *self.state.read() != DSState::SourceOpen {
-			return Err(DSError::InvalidState(*self.state.read()));
+		if self.get_state() != DSState::SourceOpen {
+			return Err(DSError::InvalidState(self.get_state()));
 		}
 
 		let mut ui = ui;
@@ -217,13 +221,13 @@ impl OpenedDS {
 	}
 
 	pub fn disable(&self) -> Result<(), DSError> {
-		if *self.state.read() != DSState::SourceEnabled {
-			return Err(DSError::InvalidState(*self.state.read()));
+		if self.get_state() != DSState::SourceEnabled {
+			return Err(DSError::InvalidState(self.get_state()));
 		}
 
 		log::debug!("Disabling TWAIN DS \"{}\"", self.name);
 
-		let mut ui = self.ui.read().ok_or_else(|| DSError::InvalidState(*self.state.read()))?;
+		let mut ui = self.ui.read().ok_or_else(|| DSError::InvalidState(self.get_state()))?;
 
 		let res = self.do_dsm_entry(DG_CONTROL, DAT_USERINTERFACE, MSG_DISABLEDS, &mut ui as *mut TW_USERINTERFACE as _);
 		if !res.is_success() {
@@ -236,8 +240,8 @@ impl OpenedDS {
 	}
 
 	pub fn reset_pending_transfers(&mut self) -> Result<(), DSError> {
-		if *self.state.read() != DSState::TransferReady {
-			return Err(DSError::InvalidState(*self.state.read()));
+		if self.get_state() != DSState::TransferReady {
+			return Err(DSError::InvalidState(self.get_state()));
 		}
 
 		log::debug!("Resetting pending transfers for TWAIN DS \"{}\"", id_to_label(&self.ds_identity.read()));
@@ -253,8 +257,8 @@ impl OpenedDS {
 	}
 
 	pub fn acquire_native_image<T, F: FnOnce(TW_HANDLE) -> T>(&self, f: F) -> Result<Option<T>, DSError> {
-		if *self.state.read() != DSState::TransferReady {
-			return Err(DSError::InvalidState(*self.state.read()));
+		if self.get_state() != DSState::TransferReady {
+			return Err(DSError::InvalidState(self.get_state()));
 		}
 
 		let mut handle: MaybeUninit<TW_HANDLE> = MaybeUninit::uninit();
@@ -316,18 +320,18 @@ impl OpenedDS {
 	}
 
 	fn set_state(&self, state: DSState) {
-		log::debug!("TWAIN state \"{}\" {} -> {}", self.name, self.state.read(), state);
+		log::debug!("TWAIN state \"{}\" {} -> {}", self.name, self.get_state(), state);
 		*self.state.write() = state;
 	}
 }
 
 impl Drop for OpenedDS {
 	fn drop(&mut self) {
-		if *self.state.read() == DSState::TransferReady {
+		if self.get_state() == DSState::TransferReady {
 			self.reset_pending_transfers().unwrap_or_else(|err| log::warn!("Unable to reset pending transfers on \"{}\": {}", self.name, err));
 		}
 
-		if *self.state.read() == DSState::SourceEnabled {
+		if self.get_state() == DSState::SourceEnabled {
 			self.disable().unwrap_or_else(|err| log::warn!("Unable to disable DS \"{}\": {}", self.name, err));
 		}
 

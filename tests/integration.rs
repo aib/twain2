@@ -107,7 +107,7 @@ fn test_acquire_native_from_software_scanner_ds() {
 		};
 		ds.enable(ui).unwrap();
 
-		assert_eq!(DSState::TransferReady, *ds.state.read());
+		assert_eq!(DSState::TransferReady, ds.get_state());
 
 		let mut calls = 0;
 		let res = ds.acquire_native_image(|h| {
