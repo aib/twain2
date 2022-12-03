@@ -289,7 +289,7 @@ impl OpenedDS {
 				self.set_state(DSState::TransferReady);
 			}
 		} else {
-			log::warn!("Unable to end transfer: {}", res);
+			log::warn!("Unable to end transfer on \"{}\": {}", self.name, res);
 		}
 
 		Ok(f_result)
@@ -324,18 +324,18 @@ impl OpenedDS {
 impl Drop for OpenedDS {
 	fn drop(&mut self) {
 		if *self.state.read() == DSState::TransferReady {
-			self.reset_pending_transfers().unwrap_or_else(|err| log::warn!("Unable to reset pending transfers: {}", err));
+			self.reset_pending_transfers().unwrap_or_else(|err| log::warn!("Unable to reset pending transfers on \"{}\": {}", self.name, err));
 		}
 
 		if *self.state.read() == DSState::SourceEnabled {
-			self.disable().unwrap_or_else(|err| log::warn!("Unable to disable DS: {}", err));
+			self.disable().unwrap_or_else(|err| log::warn!("Unable to disable DS \"{}\": {}", self.name, err));
 		}
 
 		log::debug!("Closing TWAIN DS \"{}\"", self.name);
 
 		let res = self.dsm.do_dsm_entry(None, DG_CONTROL, DAT_IDENTITY, MSG_CLOSEDS, &mut *self.ds_identity.write() as *mut TW_IDENTITY as _);
 		if !res.is_success() {
-			log::warn!("CLOSEDS failed: {}", res);
+			log::warn!("CLOSEDS failed on \"{}\": {}", self.name, res);
 		}
 	}
 }
