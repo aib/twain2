@@ -23,7 +23,7 @@ pub struct DSMEntryWrapper {
 pub struct OpenedDSM {
 	pub app_identity: RwLock<TW_IDENTITY>,
 	pub entry_points: Option<EntryPoints>,
-	dsm_entry_wrapper: DSMEntryWrapper,
+	dsm_entry_wrapper: Arc<DSMEntryWrapper>,
 }
 
 pub struct OpenedDS {
@@ -102,7 +102,7 @@ impl DSMEntryWrapper {
 }
 
 impl OpenedDSM {
-	pub fn new(dsm_entry_wrapper: DSMEntryWrapper, app_identity: TW_IDENTITY) -> Result<Arc<Self>, Response> {
+	pub fn new(dsm_entry_wrapper: Arc<DSMEntryWrapper>, app_identity: TW_IDENTITY) -> Result<Arc<Self>, Response> {
 		let app_identity = RwLock::new(app_identity);
 
 		log::debug!("Opening TWAIN DSM...");

@@ -49,7 +49,7 @@ fn test_openeddsm_new_and_get_data_sources() {
 	let wrapper = helper::get_dsm_entry_wrapper();
 
 	let identity = helper::get_app_identity(false);
-	let dsm = OpenedDSM::new(wrapper, identity);
+	let dsm = OpenedDSM::new(Arc::new(wrapper), identity);
 	assert!(dsm.is_ok());
 
 	let dsm = dsm.unwrap();
@@ -59,7 +59,7 @@ fn test_openeddsm_new_and_get_data_sources() {
 
 fn get_software_scanner(wrapper: DSMEntryWrapper) -> Option<(Arc<OpenedDSM>, Box<OpenedDS>)> {
 	let identity = helper::get_app_identity(true);
-	let dsm = OpenedDSM::new(wrapper, identity).unwrap();
+	let dsm = OpenedDSM::new(Arc::new(wrapper), identity).unwrap();
 	for ds in dsm.get_data_sources().unwrap() {
 		if tw_str32_to_string(&ds.ProductName) == "TWAIN2 Software Scanner" {
 			let ds = dsm.open_data_source(ds).unwrap();
