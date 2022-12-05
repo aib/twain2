@@ -16,7 +16,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 pub struct DSMEntryWrapper {
-	entry_proc: Box<dyn Fn(*mut TW_IDENTITY, *mut TW_IDENTITY, TW_UINT32, TW_UINT16, TW_UINT16, TW_MEMREF) -> TW_UINT16>,
+	entry_proc: Box<dyn Fn(*mut TW_IDENTITY, *mut TW_IDENTITY, TW_UINT32, TW_UINT16, TW_UINT16, TW_MEMREF) -> TW_UINT16 + Send + Sync>,
 	_libloading_library: Option<libloading::Library>,
 }
 
